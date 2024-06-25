@@ -16,11 +16,11 @@
     :options="editorOption"
     @change="onEditorChange($event)"
   /> -->
-    <pre class="language-css line-numbers">
+    <!-- <pre class="language-css line-numbers">
     <code>
       p { color: red }
     </code>
-  </pre>
+  </pre> -->
   </div>
 </template>
 
@@ -34,7 +34,7 @@ export default {
         modules: {
           toolbar: [
             ["bold", "italic", "underline", "strike"], // toggled buttons
-            ["blockquote", "code-block"],
+            ["blockquote", "code-blocks"],
             ["link", "image", "video", "formula"],
 
             // [{ header: 1 }, { header: 2 }], // custom button values
@@ -52,6 +52,16 @@ export default {
 
             // ["clean"], // remove formatting button
           ],
+          syntax: {
+            highlight: (text) => {
+              console.log(text);
+              return Prism.highlight(
+                text,
+                Prism.languages.javascript,
+                "javascript"
+              );
+            },
+          },
           // syntax: {
           //   highlight: (text) => {
           //     const code = window.hljs.highlightAuto(text).value;
@@ -62,6 +72,7 @@ export default {
           //   },
           // },
         },
+        formats: ["code-blocks"],
       },
     };
   },

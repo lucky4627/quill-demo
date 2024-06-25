@@ -7,3 +7,9 @@
 
   font-weight: normal;
 }
+pre code {
+  white-space: pre-wrap; /* 确保代码块换行 */
+}
+pre.line-numbers {
+  padding-left: 2.8em; /* 为行号留出空间 */
+}
