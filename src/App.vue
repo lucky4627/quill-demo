@@ -1,26 +1,20 @@
 <template>
-  <div>
+  <div class="line-numbers">
     <!-- Two-way Data-Binding -->
-    <quill-editor
+    <!-- <quill-editor
       ref="myQuillEditor"
       v-model="content"
       :options="editorOption"
       @blur="onEditorBlur($event)"
       @focus="onEditorFocus($event)"
       @ready="onEditorReady($event)"
-    />
+    /> -->
 
     <!-- Or manually control the data synchronization -->
-    <!-- <quill-editor
-    :content="content"
-    :options="editorOption"
-    @change="onEditorChange($event)"
-  /> -->
-    <!-- <pre class="language-css line-numbers">
-    <code>
-      p { color: red }
-    </code>
-  </pre> -->
+    <quill-editor :content="content" :options="editorOption" />
+    <div v-html="code"></div>
+    <div v-html="code"></div>
+    <button @click="highlightCode">format</button>
   </div>
 </template>
 
@@ -28,20 +22,22 @@
 export default {
   data() {
     return {
-      content: "",
+      content: `<pre line-numbers" spellcheck="false">
+        <code language-js>const a = 12;</code>
+</pre>`,
       editorOption: {
         // Some Quill options...
         modules: {
           toolbar: [
             ["bold", "italic", "underline", "strike"], // toggled buttons
-            ["blockquote", "code-blocks"],
+            ["blockquote", "code-block"],
             ["link", "image", "video", "formula"],
 
             // [{ header: 1 }, { header: 2 }], // custom button values
-            // [{ list: "ordered" }, { list: "bullet" }, { list: "check" }],
+            [{ list: "ordered" }, { list: "bullet" }, { list: "check" }],
             // [{ script: "sub" }, { script: "super" }], // superscript/subscript
             // [{ indent: "-1" }, { indent: "+1" }], // outdent/indent
-            // [{ direction: "rtl" }], // text direction
+            [{ direction: "rtl" }], // text direction
 
             // [{ size: ["small", false, "large", "huge"] }], // custom dropdown
             // [{ header: [1, 2, 3, 4, 5, 6, false] }],
@@ -52,16 +48,20 @@ export default {
 
             // ["clean"], // remove formatting button
           ],
-          syntax: {
-            highlight: (text) => {
-              console.log(text);
-              return Prism.highlight(
-                text,
-                Prism.languages.javascript,
-                "javascript"
-              );
-            },
-          },
+          // syntax: false,
+          // syntax: {
+          //   highlight: (text) => {
+          //     setTimeout(() => {
+          //       // Prism.highlightAll();
+          //     }, 1100);
+
+          //     return Prism.highlight(
+          //       text,
+          //       Prism.languages.javascript,
+          //       "javascript"
+          //     );
+          //   },
+          // },
           // syntax: {
           //   highlight: (text) => {
           //     const code = window.hljs.highlightAuto(text).value;
@@ -72,8 +72,20 @@ export default {
           //   },
           // },
         },
-        formats: ["code-blocks"],
+        formats: [
+          "code-block",
+          "list",
+          "check",
+          "bullet",
+          "ordered",
+          "blockquote",
+          "link",
+          "image",
+          "video",
+          "formula",
+        ],
       },
+      code: "",
     };
   },
   methods: {
@@ -87,17 +99,33 @@ export default {
       console.log("editor ready!", quill);
     },
     onEditorChange({ quill, html, text }) {
-      console.log("editor change!", quill, html, text);
+      // console.log("editor change!", quill, html, text);
       this.content = html;
+      console.log(html);
     },
   },
-  computed: {
-    editor() {
-      return this.$refs.myQuillEditor.quill;
-    },
-  },
+  // computed: {
+  //   editor() {
+  //     return this.$refs.myQuillEditor.quill;
+  //   },
+  // },
   mounted() {
-    console.log("this is current quill instance object", this.editor);
+    // Prism.highlightAll();
+    // console.log("this is current quill instance object", this.editor);
+  },
+  methods: {
+    highlightCode() {
+      this.code = `
+      <pre>
+        <code class="language-js">
+          const a = 12;
+        </code>
+        </pre>
+        `;
+      setTimeout(() => {
+        Prism.highlightAll();
+      }, 1000);
+    },
   },
 };
 </script>
