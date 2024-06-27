@@ -14,9 +14,7 @@ class SyntaxCodeBlock extends CodeBlock {
     let text = this.domNode.textContent;
     if (this.cachedText !== text) {
       if (text.trim().length > 0 || this.cachedText == null) {
-        this.domNode.innerHTML = `<code class="language-js">${highlight(
-          text
-        )}</code>`;
+        this.domNode.innerHTML = highlight(text);
         this.domNode.normalize();
         this.attach();
       }
@@ -32,14 +30,12 @@ let CodeToken = new Parchment.Attributor.Class("token", "hljs", {
 
 class Syntax extends Module {
   static register() {
-    console.log("11");
     Quill.register(CodeToken, true);
     Quill.register(SyntaxCodeBlock, true);
   }
 
   constructor(quill, options) {
     super(quill, options);
-    console.log("22");
     if (typeof this.options.highlight !== "function") {
       throw new Error(
         "Syntax module requires highlight.js. Please include the library on the page before Quill."
@@ -54,9 +50,11 @@ class Syntax extends Module {
       }, this.options.interval);
     });
     this.highlight();
+    console.log(this.domNode);
   }
 
   highlight() {
+    console.log("123");
     if (this.quill.selection.composing) return;
     this.quill.update(Quill.sources.USER);
     let range = this.quill.getSelection();

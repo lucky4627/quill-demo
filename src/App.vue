@@ -1,19 +1,17 @@
 <template>
   <div class="line-numbers">
     <!-- Two-way Data-Binding -->
-    <!-- <quill-editor
-      ref="myQuillEditor"
-      v-model="content"
-      :options="editorOption"
-      @blur="onEditorBlur($event)"
-      @focus="onEditorFocus($event)"
-      @ready="onEditorReady($event)"
-    /> -->
+    <quill-editor :content="code" :options="editorOption" />
 
     <!-- Or manually control the data synchronization -->
-    <quill-editor :content="content" :options="editorOption" />
-    <div v-html="code"></div>
-    <div v-html="code"></div>
+    <quill-editor
+      :content="content"
+      :options="editorOption"
+      @change="onEditorChange"
+    />
+    <!-- <div class="ql-snow">
+      <div class="ql-editor" v-html="code"></div>
+    </div> -->
     <button @click="highlightCode">format</button>
   </div>
 </template>
@@ -22,15 +20,13 @@
 export default {
   data() {
     return {
-      content: `<pre line-numbers" spellcheck="false">
-        <code language-js>const a = 12;</code>
-</pre>`,
+      content: ``,
       editorOption: {
         // Some Quill options...
         modules: {
           toolbar: [
             ["bold", "italic", "underline", "strike"], // toggled buttons
-            ["blockquote", "code-block"],
+            ["blockquote", "code-block", "code-block-container"],
             ["link", "image", "video", "formula"],
 
             // [{ header: 1 }, { header: 2 }], // custom button values
@@ -48,13 +44,9 @@ export default {
 
             // ["clean"], // remove formatting button
           ],
-          // syntax: false,
+          // syntax: true,
           // syntax: {
           //   highlight: (text) => {
-          //     setTimeout(() => {
-          //       // Prism.highlightAll();
-          //     }, 1100);
-
           //     return Prism.highlight(
           //       text,
           //       Prism.languages.javascript,
@@ -73,6 +65,7 @@ export default {
           // },
         },
         formats: [
+          "code-block-container",
           "code-block",
           "list",
           "check",
@@ -85,7 +78,9 @@ export default {
           "formula",
         ],
       },
-      code: "",
+      code: `<div class="code-block-container"><div class="code-block-container-lines" contenteditable="false"><div class="code-block-container-number"></div></div><pre class="ql-syntax" spellcheck="false">fds
+f
+</pre></div>`,
     };
   },
   methods: {
@@ -101,7 +96,11 @@ export default {
     onEditorChange({ quill, html, text }) {
       // console.log("editor change!", quill, html, text);
       this.content = html;
-      console.log(html);
+      // console.log(html);
+    },
+    highlightCode() {
+      console.log(this.content);
+      this.code = this.content;
     },
   },
   // computed: {
@@ -112,20 +111,6 @@ export default {
   mounted() {
     // Prism.highlightAll();
     // console.log("this is current quill instance object", this.editor);
-  },
-  methods: {
-    highlightCode() {
-      this.code = `
-      <pre>
-        <code class="language-js">
-          const a = 12;
-        </code>
-        </pre>
-        `;
-      setTimeout(() => {
-        Prism.highlightAll();
-      }, 1000);
-    },
   },
 };
 </script>

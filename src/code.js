@@ -1,133 +1,110 @@
 import Quill from "quill";
 const Delta = Quill.import("delta");
 const Parchment = Quill.import("parchment");
-const Block = Quill.import("blots/block");
-const TextBlot = Quill.import("blots/text");
+const Container = Quill.import("blots/container");
+const CodeBlock = Quill.import("formats/code-block");
 
-class CodeBlock extends Block {
+// todo: 1. 删除合并 2. 重置格式 3. 从接口还原
+class CodeBlockContainer extends Container {
   static create(value) {
-    let node = super.create(value);
-    node.setAttribute("spellcheck", false);
-    let codeNode = document.createElement("code");
-    codeNode.classList.add("language-javascript");
-    codeNode.classList.add("line-numbers");
-    node.appendChild(codeNode);
+    let node = super.create();
+    if (node.domNode) {
+      node.domNode.textContent = typeof value === "string" ? value : "";
+    }
     return node;
   }
 
-  static value(node) {
-    return node.textContent;
-  }
-
-  static formats() {
-    return true;
-  }
-
-  delta() {
-    let text = this.domNode.textContent;
-    if (text.endsWith("\n")) {
-      // Should always be true
-      text = text.slice(0, -1);
-    }
-    return text.split("\n").reduce((delta, frag) => {
-      return delta.insert(frag).insert("\n", this.formats());
-    }, new Delta());
+  static formats(node) {
+    let span = node.querySelector(".ql-syntax");
+    return span ? span.innerText : false;
   }
 
   format(name, value) {
-    if (name === this.statics.blotName && value) return;
-    let [text] = this.descendant(TextBlot, this.length() - 1);
-    if (text != null) {
-      text.deleteAt(text.length() - 1, 1);
-    }
-    super.format(name, value);
-  }
-
-  formatAt(index, length, name, value) {
-    if (length === 0) return;
-    if (
-      Parchment.query(name, Parchment.Scope.BLOCK) == null ||
-      (name === this.statics.blotName &&
-        value === this.statics.formats(this.domNode))
-    ) {
-      return;
-    }
-    let nextNewline = this.newlineIndex(index);
-    if (nextNewline < 0 || nextNewline >= index + length) return;
-    let prevNewline = this.newlineIndex(index, true) + 1;
-    let isolateLength = nextNewline - prevNewline + 1;
-    let blot = this.isolate(prevNewline, isolateLength);
-    let next = blot.next;
-    blot.format(name, value);
-    if (next instanceof CodeBlock) {
-      next.formatAt(
-        0,
-        index - prevNewline + length - isolateLength,
-        name,
-        value
-      );
-    }
-  }
-
-  insertAt(index, value, def) {
-    if (def != null) return;
-    let [text, offset] = this.descendant(TextBlot, index);
-    text.insertAt(offset, value);
-  }
-
-  length() {
-    let length = this.domNode.textContent.length;
-    if (!this.domNode.textContent.endsWith("\n")) {
-      return length + 1;
-    }
-    return length;
-  }
-
-  newlineIndex(searchIndex, reverse = false) {
-    if (!reverse) {
-      let offset = this.domNode.textContent.slice(searchIndex).indexOf("\n");
-      return offset > -1 ? searchIndex + offset : -1;
+    if (name === "code-block-container" && value) {
+      let span = this.domNode.querySelector(".ql-syntax");
+      if (span) {
+        span.innerText = value;
+      }
     } else {
-      return this.domNode.textContent.slice(0, searchIndex).lastIndexOf("\n");
+      super.format(name, value);
+    }
+  }
+
+  constructor(domNode) {
+    super(domNode);
+    this.domNode = domNode;
+    if (this.domNode.textContent) {
+      const item = Parchment.create(this.statics.defaultChild);
+      const text = Parchment.create("text", this.domNode.textContent);
+      item.appendChild(text);
+      // item.domNode.innerHTML = this.domNode.textContent;
+      this.domNode.textContent = "";
+      this.appendChild(item);
+    }
+    if (domNode.querySelector(".code-block-container-lines")) return;
+    const div = document.createElement("div");
+    div.classList.add("code-block-container-lines");
+    div.contentEditable = false;
+    const span = document.createElement("div");
+    span.classList.add("code-block-container-number");
+    div.appendChild(span);
+    this.domNode.prepend(div);
+  }
+
+  insertBefore(childBlot, refBlot) {
+    if (childBlot.statics.blotName === this.statics.defaultChild) {
+      super.insertBefore(childBlot, refBlot);
+    } else {
+      let index = refBlot ? refBlot.offset(this) : this.length();
+      let after = this.split(index);
+      if (after !== null) {
+        after.parent?.insertBefore(childBlot, after);
+      }
     }
   }
 
   optimize(context) {
-    if (!this.domNode.textContent.endsWith("\n")) {
-      this.appendChild(Parchment.create("text", "\n"));
-    }
+    setTimeout(() => {
+      const lines = this.domNode.querySelector(".code-block-container-lines");
+      const h = lines?.clientHeight;
+      const count = Math.ceil(h / 20);
+      const children = lines.children ?? [];
+      if (children.length === count) return;
+      lines.innerHTML = "";
+      for (let i = 0; i < count; i++) {
+        const span = document.createElement("div");
+        span.classList.add("code-block-container-number");
+        lines.appendChild(span);
+      }
+    }, 200);
     super.optimize(context);
     let next = this.next;
     if (
       next != null &&
       next.prev === this &&
-      next.statics.blotName === this.statics.blotName &&
-      this.statics.formats(this.domNode) === next.statics.formats(next.domNode)
+      next.statics.blotName === this.statics.defaultChild
     ) {
-      next.optimize(context);
       next.moveChildren(this);
       next.remove();
     }
   }
 
   replace(target) {
+    if (target.statics.blotName !== this.statics.blotName) {
+      let item =
+        this.children?.head ?? Parchment.create(this.statics.defaultChild);
+      target.moveChildren(item);
+      this.appendChild(item);
+    }
     super.replace(target);
-    [].slice.call(this.domNode.querySelectorAll("*")).forEach(function (node) {
-      let blot = Parchment.find(node);
-      if (blot == null) {
-        node.parentNode.removeChild(node);
-      } else if (blot instanceof Parchment.Embed) {
-        blot.remove();
-      } else {
-        blot.unwrap();
-      }
-    });
   }
 }
 
-CodeBlock.blotName = "code-blocks";
-CodeBlock.tagName = "PRE";
-CodeBlock.TAB = "  ";
-CodeBlock.className = "ql-syntax";
+CodeBlockContainer.blotName = "code-block-container";
+CodeBlockContainer.scope = Parchment.Scope.BLOCK_BLOT;
+CodeBlockContainer.tagName = "DIV";
+CodeBlockContainer.defaultChild = "code-block";
+CodeBlockContainer.allowedChildren = [CodeBlock];
+CodeBlockContainer.className = "code-block-container";
 
-export default CodeBlock;
+export default CodeBlockContainer;
