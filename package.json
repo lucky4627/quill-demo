@@ -9,6 +9,7 @@
   "dependencies": {
     "highlight.js": "^11.9.0",
     "highlightjs-line-numbers.js": "^2.8.0",
+    "vditor": "^3.10.4",
     "vue": "^2.7.7",
     "vue-quill-editor": "^3.0.6"
   },
